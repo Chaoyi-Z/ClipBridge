@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ClipBridge</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ClipBridge">
+<meta name="theme-color" content="#2563eb">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/favicon.ico">
+<link rel="manifest" id="manifest" href="/manifest.webmanifest">
+<style>
+:root{--bg:#f1f5f9;--card:#fff;--text:#0f172a;--muted:#64748b;--accent:#2563eb;--border:#e2e8f0;--danger:#dc2626;--pc:#0284c7;--phone:#059669;--mac:#0d9488;--ipad:#16a34a;--editor:#f8fafc}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1220;--card:#131c2e;--text:#e5e7eb;--muted:#94a3b8;--accent:#3b82f6;--border:#243044;--pc:#38bdf8;--phone:#34d399;--mac:#2dd4bf;--ipad:#4ade80;--editor:#0f172a}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);padding-bottom:env(safe-area-inset-bottom)}
+header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--border);padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));display:flex;align-items:center;gap:10px}
+header h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.2px}
+header .sub{font-size:12px;color:var(--muted);display:block;font-weight:400}
+.spacer{flex:1}
+.dot{width:10px;height:10px;border-radius:50%;background:#9ca3af;flex:none}
+.dot.on{background:#10b981}.dot.off{background:#ef4444}
+main{max-width:680px;margin:0 auto;padding:12px 12px 48px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:12px}
+h2{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+#editor{min-height:88px;max-height:40vh;overflow:auto;padding:10px 12px;border:1px dashed var(--border);border-radius:10px;font-size:16px;line-height:1.4;white-space:pre-wrap;word-break:break-word;outline:none;background:var(--editor)}
+#editor:focus{border-color:var(--accent)}
+#editor:empty:before{content:attr(data-placeholder);color:var(--muted);pointer-events:none}
+#preview{position:relative;margin-top:8px}
+#preview img{max-width:100%;max-height:240px;border-radius:10px;display:block;border:1px solid var(--border)}
+#preview button{position:absolute;top:6px;left:6px}
+button,.btn{font:inherit;font-size:15px;line-height:1.2;padding:9px 14px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button:active{transform:scale(.98)}
+button.primary{background:var(--accent);color:#fff;border-color:transparent}
+button.danger{color:var(--danger)}
+button.small,.actions button{padding:6px 10px;font-size:13px;border-radius:8px}
+button.link{border:none;background:none;color:var(--accent);padding:4px 0;font-size:13px}
+button:disabled{opacity:.5}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+.hint{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+.hint code{font-size:12px}
+.banner{background:#fef3c7;color:#78350f;border-radius:10px;padding:8px 12px;font-size:13.5px;margin-bottom:12px}
+@media (prefers-color-scheme:dark){.banner{background:#422006;color:#fde68a}}
+.item-head{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);margin-bottom:8px}
+.badge{font-weight:600;padding:2px 8px;border-radius:999px;font-size:12px;color:#fff}
+.badge.pc{background:var(--pc)}.badge.phone,.badge.shortcut{background:var(--phone)}.badge.mac{background:var(--mac)}.badge.ipad{background:var(--ipad)}
+.meta{margin-left:auto}
+.text{white-space:pre-wrap;word-break:break-word;font-size:15px;line-height:1.45;max-height:9.5em;overflow:hidden;position:relative}
+.text.open{max-height:none}
+.text.clamped:not(.open):after{content:"";position:absolute;left:0;right:0;bottom:0;height:2.5em;background:linear-gradient(transparent,var(--card))}
+.item img.thumb{max-width:100%;max-height:260px;border-radius:10px;display:block;cursor:zoom-in;border:1px solid var(--border);background:#fff}
+.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.empty{color:var(--muted);text-align:center;padding:28px 10px;font-size:14.5px}
+#viewer{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;gap:12px}
+#viewer img{max-width:100%;max-height:78vh;object-fit:contain;-webkit-touch-callout:default;border-radius:6px}
+#viewer .bar{color:#e5e7eb;font-size:14px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
+#viewer .bar .row{justify-content:center;margin:0}
+#viewer button{background:#1f2937;color:#fff;border-color:#374151}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:999px;opacity:0;transition:opacity .2s;pointer-events:none;font-size:14px;z-index:60;max-width:90vw;text-align:center}
+#toast.show{opacity:1}
+.pair-url{display:flex;gap:10px;align-items:flex-start;margin:10px 0 14px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.pair-url:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.pair-url img{width:150px;height:150px;flex:none;border-radius:8px;background:#fff;image-rendering:pixelated}
+.pair-url .info{min-width:0;flex:1}
+.pair-url .label{font-weight:600;font-size:14px;margin-bottom:4px}
+.pair-url code{display:block;font-size:12px;word-break:break-all;color:var(--muted);margin-bottom:6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.pair-tip{font-size:13px;color:var(--muted);margin-top:10px;line-height:1.5}
+.pair-tip code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;background:var(--editor);padding:1px 5px;border-radius:5px}
+details summary{cursor:pointer;font-size:14px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;list-style:none;display:flex;align-items:center;gap:6px}
+details summary::-webkit-details-marker{display:none}
+details summary:before{content:"▸";font-size:12px;transition:transform .15s}
+details[open] summary:before{transform:rotate(90deg)}
+.sc{margin-top:6px;font-size:14px;line-height:1.5}
+.sc-title{font-weight:600;margin:12px 0 4px}
+.sc ol{margin:4px 0 8px;padding-left:22px}
+.sc li{margin-bottom:6px}
+.sc code{display:inline-block;max-width:100%;font-size:12px;word-break:break-all;color:var(--accent);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;margin:4px 6px 0 0;vertical-align:middle}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>ClipBridge <span class="sub" id="pcname">connecting…</span></h1></div>
+  <div class="spacer"></div>
+  <button class="small" id="pauseBtn" title="Pause/resume sharing the PC clipboard">Pause</button>
+  <button class="small" id="refreshBtn" title="Refresh">↻</button>
+  <div class="dot" id="dot" title="connection"></div>
+</header>
+
+<main>
+  <div class="banner hidden" id="pausedBanner">PC clipboard sharing is paused. New things copied on the PC are not sent.</div>
+  <div class="banner hidden" id="unpairedBanner">Not paired. Paste the pairing link here. Get it from the PC page with “Copy link”, or copy it from the address bar in Safari.
+    <div class="row" style="margin-top:8px"><input id="pairInput" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="http://…?t=…" style="flex:1;min-width:0;font-size:16px;padding:8px 10px;border-radius:8px;border:1px solid var(--border)"><button class="primary small" id="pairBtn">Pair</button></div>
+  </div>
+
+  <section class="card" id="compose">
+    <h2 id="composeTitle">Send to PC</h2>
+    <div id="editor" contenteditable="true" data-placeholder="Paste text or an image here…" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+    <div id="preview" class="hidden"><img id="previewImg" alt="pending image"><button class="small" id="removeImg">✕ remove</button></div>
+    <div class="row">
+      <button class="primary hidden" id="pasteBtn">Paste &amp; send</button>
+      <button class="primary" id="sendBtn">Send to PC</button>
+      <label class="btn">Photo…<input type="file" id="fileInput" accept="image/*" class="hidden"></label>
+      <button id="clearBtn">Clear</button>
+    </div>
+    <p class="hint" id="hint"></p>
+  </section>
+
+  <section class="card hidden" id="pair"></section>
+
+  <details class="card" id="shortcuts">
+    <summary>One-gesture mode: iOS Shortcuts (works inside any app)</summary>
+    <p class="hint">iOS lets only Apple's own Universal Clipboard change the clipboard in the background, so no app or web page can make this fully automatic. Two Shortcuts get it down to one gesture (Back Tap, Action button, Lock Screen or Share sheet), with no need to open this page.</p>
+    <div class="sc">
+      <div class="sc-title">Shortcut 1 · “Get from PC” (puts the latest PC copy into the iPhone clipboard)</div>
+      <ol>
+        <li><b>Get Contents of URL</b> — paste this URL, Method <b>GET</b><br><code id="scLatest">…</code> <button class="small" data-copy="scLatest">Copy URL</button></li>
+        <li><b>Copy to Clipboard</b> — input: <i>Contents of URL</i></li>
+        <li><b>Show Notification</b> — “Copied from PC” (optional)</li>
+      </ol>
+      <div class="sc-title">Shortcut 2 · “Send to PC” (sends the iPhone clipboard, text or picture, to the PC clipboard)</div>
+      <ol>
+        <li><b>Get Clipboard</b></li>
+        <li><b>Get Images from Input</b> — input: <i>Clipboard</i></li>
+        <li><b>Get Contents of URL</b> — paste this URL, then tap <b>Show More</b>: Method <b>POST</b>, Request Body <b>Form</b>. Add two fields: <b>File</b> named <code>image</code> = <i>Images</i>, and <b>Text</b> named <code>text</code> = <i>Clipboard</i>.<br><code id="scPush">…</code> <button class="small" data-copy="scPush">Copy URL</button></li>
+      </ol>
+      <p class="hint">Then: Settings → Accessibility → Touch → <b>Back Tap</b> → Double Tap = “Get from PC”, Triple Tap = “Send to PC”. Copy on the PC, double-tap the back of the phone, paste anywhere. Works for text and images.</p>
+    </div>
+  </details>
+
+  <section id="feed"></section>
+</main>
+
+<div id="viewer" class="hidden">
+  <img id="viewerImg" alt="">
+  <div class="bar">
+    <span id="viewerHint"></span>
+    <div class="row">
+      <button id="viewerCopy" class="hidden">Copy image</button>
+      <button id="viewerShare" class="hidden">Share…</button>
+      <button id="viewerClose">Close</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const params = new URLSearchParams(location.search);
+const LOCAL = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(location.hostname);
+const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const secure = !!window.isSecureContext;
+const canReadClip = secure && !!(navigator.clipboard && navigator.clipboard.read);
+const canWriteImg = secure && !!(navigator.clipboard && navigator.clipboard.write && window.ClipboardItem);
+const canShare = !!navigator.share;
+const SOURCE = LOCAL ? 'pc' : 'phone';
+
+let token = params.get('t') || '';
+try {
+  if (token) localStorage.setItem('cb_token', token);
+  else token = localStorage.getItem('cb_token') || '';
+} catch (e) {}
+
+let version = -1, items = [], paused = false, pendingImage = null, info = null, pollCtl = null, viewerItem = null;
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const tok = u => token ? u + (u.includes('?') ? '&' : '?') + 't=' + encodeURIComponent(token) : u;
+let toastTimer;
+function toast(msg, ms = 2200) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+}
+function setStatus(on, text) {
+  const d = $('#dot'); d.classList.toggle('on', on); d.classList.toggle('off', !on);
+  d.title = text || (on ? 'Connected' : 'Reconnecting…');
+  if (!on && !info) $('#pcname').textContent = text || 'reconnecting…';
+}
+async function api(path, opts = {}) {
+  opts.headers = Object.assign({}, opts.headers || {}, token ? { 'X-Token': token } : {});
+  const r = await fetch(path, opts);
+  if (r.status === 401) { $('#unpairedBanner').classList.remove('hidden'); setStatus(false, 'Not paired'); throw new Error('unauthorized'); }
+  $('#unpairedBanner').classList.add('hidden');
+  if (!r.ok) { let m = r.status + ' ' + r.statusText; try { m = (await r.json()).error || m; } catch (e) {} throw new Error(m); }
+  return r;
+}
+function fmtTime(ts) {
+  const d = new Date(ts * 1000), now = new Date();
+  const t = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return d.toDateString() === now.toDateString() ? t : d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + t;
+}
+function fmtSize(n) { return n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(0) + ' KB' : (n / 1048576).toFixed(1) + ' MB'; }
+function button(label, onclick, cls) { const b = document.createElement('button'); b.textContent = label; if (cls) b.className = cls; b.addEventListener('click', onclick); return b; }
+
+// ---------- copy helpers -------------------------------------------------------
+function copyText(text) {
+  if (secure && navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+  return new Promise((res, rej) => {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.readOnly = true; ta.contentEditable = 'true';
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try {
+      const range = document.createRange(); range.selectNodeContents(ta);
+      const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+      ta.setSelectionRange(0, text.length);
+    } catch (e) {}
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    ok ? res() : rej(new Error('copy not permitted here'));
+  });
+}
+async function copyItem(it) {
+  try {
+    if (it.type === 'text') { await copyText(it.text); toast('Copied ✓'); return; }
+    if (canWriteImg) {
+      const blob = fetch(tok(it.url)).then(r => r.blob());
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      toast('Image copied ✓'); return;
+    }
+    openViewer(it, true);
+  } catch (e) {
+    toast('Copy failed: ' + e.message, 3000);
+    if (it.type === 'image') openViewer(it, true);
+  }
+}
+async function recopyOnPC(it) {
+  try { await api('/api/copy/' + it.id, { method: 'POST' }); toast('Now in the PC clipboard ✓'); }
+  catch (e) { toast('Failed: ' + e.message, 3000); }
+}
+async function shareItem(it) {
+  try {
+    if (it.type === 'text') { await navigator.share({ text: it.text }); return; }
+    const blob = await (await fetch(tok(it.url))).blob();
+    const file = new File([blob], 'clipbridge-' + it.id + '.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ files: [file] });
+    else await navigator.share({ url: location.origin + tok(it.url) });
+  } catch (e) { if (e.name !== 'AbortError') toast('Share failed: ' + e.message, 3000); }
+}
+async function delItem(it) {
+  try { await api('/api/delete/' + it.id, { method: 'POST' }); }
+  catch (e) { toast('Delete failed: ' + e.message, 3000); }
+}
+
+// ---------- viewer -------------------------------------------------------------
+function openViewer(it, copyHint) {
+  viewerItem = it;
+  $('#viewerImg').src = tok(it.url);
+  $('#viewerHint').textContent = isIOS
+    ? 'Long-press the image, then choose Copy (or Save to Photos / Share).'
+    : 'Right-click the image to copy or save it.';
+  $('#viewerCopy').classList.toggle('hidden', !canWriteImg);
+  $('#viewerShare').classList.toggle('hidden', !canShare);
+  $('#viewer').classList.remove('hidden');
+  if (copyHint && isIOS) toast('Long-press the image → Copy', 3000);
+}
+$('#viewerClose').addEventListener('click', () => { $('#viewer').classList.add('hidden'); $('#viewerImg').src = ''; });
+$('#viewer').addEventListener('click', e => { if (e.target === e.currentTarget) $('#viewerClose').click(); });
+$('#viewerCopy').addEventListener('click', () => viewerItem && copyItem(viewerItem));
+$('#viewerShare').addEventListener('click', () => viewerItem && shareItem(viewerItem));
+
+// ---------- feed ---------------------------------------------------------------
+function render() {
+  $('#pausedBanner').classList.toggle('hidden', !paused);
+  $('#pauseBtn').textContent = paused ? 'Resume' : 'Pause';
+  const feed = $('#feed');
+  feed.innerHTML = '';
+  if (!items.length) {
+    const e = document.createElement('div'); e.className = 'card empty';
+    e.textContent = LOCAL ? 'Nothing yet. Copy something on this PC, or paste on your phone.' : 'Nothing yet. Copy something on the PC and it will appear here.';
+    feed.appendChild(e); return;
+  }
+  for (const it of items) feed.appendChild(itemEl(it));
+}
+function itemEl(it) {
+  const el = document.createElement('div'); el.className = 'card item'; el.dataset.id = it.id;
+  const head = document.createElement('div'); head.className = 'item-head';
+  const badge = document.createElement('span'); badge.className = 'badge ' + it.source;
+  badge.textContent = { pc: '💻 PC', mac: '🍎 Mac', ipad: '📲 iPad', shortcut: '📱 Phone' }[it.source] || '📱 Phone';
+  const time = document.createElement('span'); time.textContent = fmtTime(it.ts);
+  const meta = document.createElement('span'); meta.className = 'meta';
+  meta.textContent = it.type === 'image' ? `${it.w}×${it.h} · ${fmtSize(it.size)}` : `${it.text.length.toLocaleString()} chars`;
+  head.append(badge, time, meta); el.appendChild(head);
+
+  if (it.type === 'text') {
+    const t = document.createElement('div'); t.className = 'text'; t.textContent = it.text; el.appendChild(t);
+    if (it.text.length > 500 || it.text.split('\n').length > 8) {
+      t.classList.add('clamped');
+      const more = button('Show more', () => { t.classList.toggle('open'); more.textContent = t.classList.contains('open') ? 'Show less' : 'Show more'; }, 'link');
+      el.appendChild(more);
+    }
+  } else {
+    const img = document.createElement('img'); img.className = 'thumb'; img.src = tok(it.url); img.alt = 'image'; img.loading = 'lazy';
+    img.addEventListener('click', () => openViewer(it));
+    el.appendChild(img);
+  }
+  const acts = document.createElement('div'); acts.className = 'actions';
+  acts.appendChild(button(it.type === 'image' && !canWriteImg && !LOCAL ? 'Open to copy' : 'Copy', () => copyItem(it), 'primary'));
+  if (!LOCAL) acts.appendChild(button('→ PC clipboard', () => recopyOnPC(it)));
+  else if (it.source !== 'pc') acts.appendChild(button('Copy again on PC', () => recopyOnPC(it)));
+  if (canShare) acts.appendChild(button('Share', () => shareItem(it)));
+  acts.appendChild(button('Delete', () => delItem(it), 'danger'));
+  el.appendChild(acts);
+  return el;
+}
+
+// ---------- live updates (long polling) ------------------------------------------
+async function pollLoop() {
+  for (;;) {
+    pollCtl = new AbortController();
+    const ctl = pollCtl;
+    const timer = setTimeout(() => ctl.abort(), 40000);
+    try {
+      const r = await api(`/api/state?since=${version}&wait=1`, { signal: ctl.signal });
+      const d = await r.json();
+      clearTimeout(timer);
+      setStatus(true);
+      if (d.version !== version) { version = d.version; items = d.items; paused = d.paused; render(); }
+    } catch (e) {
+      clearTimeout(timer);
+      if (e.name === 'AbortError') { await sleep(50); continue; }
+      if (e.message === 'unauthorized') { await sleep(4000); continue; }
+      setStatus(false);
+      await sleep(2500);
+    }
+  }
+}
+function repoll() { if (pollCtl) pollCtl.abort(); }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') repoll(); });
+window.addEventListener('online', repoll);
+window.addEventListener('pageshow', repoll);
+$('#refreshBtn').addEventListener('click', () => { version = -1; repoll(); loadInfo(); });
+$('#pauseBtn').addEventListener('click', async () => {
+  try { const r = await api('/api/pause', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paused: !paused }) });
+        paused = (await r.json()).paused; render(); }
+  catch (e) { toast('Failed: ' + e.message, 3000); }
+});
+
+// ---------- compose --------------------------------------------------------------
+const editor = $('#editor'), fileInput = $('#fileInput');
+function insertText(text) {
+  editor.focus();
+  let ok = false;
+  try { ok = document.execCommand('insertText', false, text); } catch (e) {}
+  if (!ok) editor.appendChild(document.createTextNode(text));
+}
+function setPendingImage(blob) {
+  pendingImage = blob;
+  $('#previewImg').src = URL.createObjectURL(blob);
+  $('#preview').classList.remove('hidden');
+  $('#sendBtn').textContent = 'Send image to PC';
+}
+function clearCompose() {
+  pendingImage = null; editor.innerHTML = '';
+  $('#preview').classList.add('hidden'); $('#previewImg').src = '';
+  $('#sendBtn').textContent = 'Send to PC';
+}
+$('#removeImg').addEventListener('click', () => { pendingImage = null; $('#preview').classList.add('hidden'); $('#sendBtn').textContent = 'Send to PC'; });
+$('#clearBtn').addEventListener('click', clearCompose);
+
+function imageFromClipboardData(cd) {
+  if (!cd) return null;
+  for (const f of (cd.files || [])) if (f.type && f.type.startsWith('image/')) return f;
+  for (const it of (cd.items || [])) if (it.kind === 'file' && it.type.startsWith('image/')) { const f = it.getAsFile(); if (f) return f; }
+  return null;
+}
+editor.addEventListener('paste', e => {
+  const cd = e.clipboardData;
+  const file = imageFromClipboardData(cd);
+  if (file) { e.preventDefault(); setPendingImage(file); return; }
+  const text = cd && cd.getData('text/plain');
+  if (text) { e.preventDefault(); insertText(text); return; }
+  setTimeout(scanInsertedImages, 80);   // Safari sometimes inserts <img> instead of giving a file
+});
+editor.addEventListener('drop', e => {
+  const file = imageFromClipboardData(e.dataTransfer);
+  if (file) { e.preventDefault(); setPendingImage(file); return; }
+  const text = e.dataTransfer && e.dataTransfer.getData('text/plain');
+  if (text) { e.preventDefault(); insertText(text); }
+});
+editor.addEventListener('dragover', e => e.preventDefault());
+async function scanInsertedImages() {
+  const imgs = [...editor.querySelectorAll('img')];
+  for (const im of imgs) {
+    const src = im.getAttribute('src') || '';
+    im.remove();
+    if (src.startsWith('data:') || src.startsWith('blob:')) {
+      try { const b = await (await fetch(src)).blob(); if (b.type.startsWith('image/')) { setPendingImage(b); return; } } catch (e) {}
+    }
+    if (src.startsWith('webkit-fake-url')) toast('Safari hid that image. Use "Photo…" or copy it again.', 3500);
+  }
+}
+fileInput.addEventListener('change', async () => {
+  const f = fileInput.files && fileInput.files[0]; fileInput.value = '';
+  if (!f) return;
+  setPendingImage(f);
+  await send();
+});
+async function sendBlob(blob) {
+  await api(`/api/push?source=${SOURCE}`, { method: 'POST', headers: { 'Content-Type': blob.type || 'application/octet-stream' }, body: blob });
+}
+async function sendText(text) {
+  await api(`/api/push?source=${SOURCE}`, { method: 'POST', headers: { 'Content-Type': 'text/plain; charset=utf-8' }, body: text });
+}
+async function send() {
+  const btn = $('#sendBtn'); btn.disabled = true;
+  try {
+    if (pendingImage) { await sendBlob(pendingImage); toast(LOCAL ? 'Image copied ✓' : 'Image sent — it is in the PC clipboard ✓'); clearCompose(); return; }
+    const text = editor.innerText.replace(/ /g, ' ').replace(/\n+$/, '');
+    if (!text.trim()) { toast('Nothing to send'); editor.focus(); return; }
+    await sendText(text); toast(LOCAL ? 'Copied ✓' : 'Sent — it is in the PC clipboard ✓'); clearCompose();
+  } catch (e) { toast('Send failed: ' + e.message, 3500); }
+  finally { btn.disabled = false; }
+}
+$('#sendBtn').addEventListener('click', send);
+editor.addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); send(); } });
+$('#pasteBtn').addEventListener('click', async () => {
+  try {
+    const list = await navigator.clipboard.read();
+    for (const ci of list) {
+      const imgType = ci.types.find(t => t.startsWith('image/'));
+      if (imgType) { await sendBlob(await ci.getType(imgType)); toast('Image sent to PC ✓'); return; }
+    }
+    for (const ci of list) if (ci.types.includes('text/plain')) {
+      const t = await (await ci.getType('text/plain')).text();
+      if (t.trim()) { await sendText(t); toast('Sent to PC ✓'); return; }
+    }
+    toast('Clipboard is empty');
+  } catch (e) { toast('Paste not allowed: ' + e.message, 3000); editor.focus(); }
+});
+
+// ---------- pairing from a pasted link (Home-Screen app started without a key) -------
+$('#pairBtn').addEventListener('click', async () => {
+  const raw = $('#pairInput').value.trim();
+  let t = raw;
+  try { const u = new URL(raw); t = u.searchParams.get('t') || ''; } catch (e) { const m = raw.match(/[?&]t=([^&#\s]+)/); if (m) t = decodeURIComponent(m[1]); }
+  if (!t) { toast('No key found in that link'); return; }
+  token = t;
+  try { localStorage.setItem('cb_token', token); } catch (e) {}
+  try { await api('/api/info'); toast('Paired ✓'); $('#pairInput').value = ''; version = -1; repoll(); loadInfo(); }
+  catch (e) { toast('That key did not work: ' + e.message, 3500); }
+});
+
+// ---------- info / pairing panel --------------------------------------------------
+async function loadInfo() {
+  try {
+    const r = await api('/api/info'); info = await r.json();
+    if (!token && info.token) { token = info.token; try { localStorage.setItem('cb_token', token); } catch (e) {} }
+    $('#pcname').textContent = (LOCAL ? 'this PC · ' : '') + info.name;
+    $('#manifest').href = tok('/manifest.webmanifest');
+    renderShortcutUrls();
+    if (LOCAL || params.has('pair')) renderPair();
+  } catch (e) { /* status handled by poll */ }
+}
+function renderShortcutUrls() {
+  // on the phone use the address the page was opened with; on the PC use the first pairing link
+  let base = location.origin;
+  if (LOCAL && info && info.urls.length) base = new URL(info.urls[0].url).origin;
+  $('#scLatest').textContent = base + '/api/latest?t=' + token;
+  $('#scPush').textContent = base + '/api/push?t=' + token;
+}
+document.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', async () => {
+  try { await copyText($('#' + b.dataset.copy).textContent); toast('URL copied ✓'); } catch (e) { toast('Copy failed'); }
+}));
+function renderPair() {
+  const p = $('#pair'); p.classList.remove('hidden'); p.innerHTML = '';
+  const h = document.createElement('h2'); h.textContent = 'Pair your iPhone'; p.appendChild(h);
+  if (!info.urls.length) { p.appendChild(Object.assign(document.createElement('p'), { textContent: 'No network address found.' })); return; }
+  const intro = document.createElement('p'); intro.className = 'hint';
+  intro.textContent = 'Scan a QR code with the iPhone camera (or send yourself the link). The link contains the pairing key, so keep it private. Add the page to the Home Screen for an app-like experience.';
+  p.appendChild(intro);
+  for (const u of info.urls) {
+    const row = document.createElement('div'); row.className = 'pair-url';
+    const img = document.createElement('img'); img.src = tok('/qr.png?u=' + encodeURIComponent(u.url)); img.alt = 'QR code';
+    img.onerror = () => img.remove();
+    const inf = document.createElement('div'); inf.className = 'info';
+    const lab = document.createElement('div'); lab.className = 'label'; lab.textContent = u.label;
+    const code = document.createElement('code'); code.textContent = u.url;
+    const b = button('Copy link', async () => { try { await copyText(u.url); toast('Link copied ✓'); } catch (e) { toast('Copy failed'); } }, 'small');
+    inf.append(lab, code, b); row.append(img, inf); p.appendChild(row);
+  }
+  const tip = document.createElement('div'); tip.className = 'pair-tip';
+  const tsName = info.tailscale_dns || 'your-pc.tailnet.ts.net';
+  tip.innerHTML = (info.tailscale_online
+    ? 'Tailscale is running on this PC. If the iPhone also has Tailscale on, the Tailscale link works from anywhere (campus Wi-Fi, home, cellular). '
+    : 'Tailscale is not running on this PC; only the local-network link is available. ')
+    + 'Over plain http the phone copies images with a long-press. For one-tap image copy and share, give the page a real HTTPS address once:'
+    + `<br><code>tailscale serve --bg --https=443 http://127.0.0.1:${info.port}</code> → then open <code>https://${tsName}/?t=…</code> on the phone.`;
+  p.appendChild(tip);
+}
+
+// ---------- hints -----------------------------------------------------------------
+function setHints() {
+  $('#pasteBtn').classList.toggle('hidden', !canReadClip);
+  const hint = $('#hint');
+  if (LOCAL) hint.textContent = 'This is the PC view. Anything you copy on this PC appears below automatically; the phone sees the same list.';
+  else if (canReadClip) hint.textContent = 'Tap "Paste & send" to send whatever is in the phone clipboard (text or image) straight to the PC clipboard.';
+  else if (isIOS) hint.textContent = 'Tap the box, long-press → Paste (text or a copied image/screenshot), then Send. Or use Photo… to pick from Photos. Sent items go straight into the PC clipboard.';
+  else hint.textContent = 'Paste text or an image (Ctrl+V), then Send. It goes straight into the PC clipboard.';
+}
+
+setHints();
+loadInfo();
+pollLoop();
+})();
+</script>
+</body>
+</html>

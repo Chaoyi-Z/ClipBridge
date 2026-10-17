@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd template for the ClipBridge Mac relay. install_mac_relay.sh fills in the placeholders
+  and writes the result to ~/Library/LaunchAgents/com.clipbridge.macrelay.plist (mode 600: it holds
+  the pairing key). The agent starts at login and is restarted if it ever exits.
+  Log: ~/Library/Logs/clipbridge-relay.log
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.clipbridge.macrelay</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__PYTHON__</string>
+        <string>__SCRIPT__</string>
+__EXTRA_ARGS__    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>CLIPBRIDGE_URL</key>
+        <string>__URL__</string>
+        <key>CLIPBRIDGE_TOKEN</key>
+        <string>__TOKEN__</string>
+        <key>PYTHONUNBUFFERED</key>
+        <string>1</string>
+        <key>LANG</key>
+        <string>en_US.UTF-8</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <!-- the pasteboard belongs to the logged-in GUI session -->
+    <key>LimitLoadToSessionType</key>
+    <string>Aqua</string>
+    <key>ProcessType</key>
+    <string>Interactive</string>
+
+    <key>StandardOutPath</key>
+    <string>__LOG__</string>
+    <key>StandardErrorPath</key>
+    <string>__LOG__</string>
+</dict>
+</plist>

@@ -1,0 +1,5 @@
+Pillow>=9.0
+pywin32>=300
+qrcode>=7.0
+pystray>=0.19
+pillow-heif>=0.16
